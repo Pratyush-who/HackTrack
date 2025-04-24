@@ -14,6 +14,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   String userName = "User";
   String userImageUrl = "https://i.pravatar.cc/150?img=11";
+  
 
   @override
   void initState() {
@@ -24,16 +25,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadUserData() async {
     User? currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
+      await currentUser.reload();
+      currentUser = FirebaseAuth.instance.currentUser;
+
       setState(() {
-        // Use display name if available, otherwise use email or 'User'
-        userName = currentUser.displayName ?? 
-                  (currentUser.email?.split('@')[0] ?? 'User');
-        
-        if (currentUser.photoURL != null) {
-          userImageUrl = currentUser.photoURL!;
+        userName = currentUser?.displayName ?? 'User';
+        if (currentUser?.photoURL != null) {
+          userImageUrl = currentUser!.photoURL!;
         }
       });
-      
     }
   }
 
@@ -41,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await FirebaseAuth.instance.signOut();
       if (!mounted) return;
-      
+
       // Navigate to login screen and remove all previous routes
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -66,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const surfaceColor = Color(0xFF1E1E1E); // Dark surface
     const cardColor = Color(0xFF242424); // Dark card
     const textColor = Color(0xFFE0E0E0); // Light text for dark background
-    
+
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
@@ -115,10 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.home, color: accentColor),
-              title: Text(
-                'Feed',
-                style: GoogleFonts.roboto(color: textColor),
-              ),
+              title: Text('Feed', style: GoogleFonts.roboto(color: textColor)),
               onTap: () {
                 Navigator.pop(context); // Close drawer
                 setState(() => _currentIndex = 0); // Switch to Feed
@@ -146,43 +143,46 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(context); // Close drawer
                 showDialog(
                   context: context,
-                  builder: (context) => AlertDialog(
-                    backgroundColor: cardColor,
-                    title: Text(
-                      'Logout',
-                      style: GoogleFonts.poppins(
-                        color: textColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    content: Text(
-                      'Are you sure you want to logout?',
-                      style: GoogleFonts.roboto(color: textColor),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(
-                          'Cancel',
-                          style: GoogleFonts.roboto(color: accentColor),
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context); // Close dialog
-                          _logout();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryColor,
-                          foregroundColor: textColor,
-                        ),
-                        child: Text(
+                  builder:
+                      (context) => AlertDialog(
+                        backgroundColor: cardColor,
+                        title: Text(
                           'Logout',
-                          style: GoogleFonts.roboto(fontWeight: FontWeight.bold),
+                          style: GoogleFonts.poppins(
+                            color: textColor,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
+                        content: Text(
+                          'Are you sure you want to logout?',
+                          style: GoogleFonts.roboto(color: textColor),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text(
+                              'Cancel',
+                              style: GoogleFonts.roboto(color: accentColor),
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context); // Close dialog
+                              _logout();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              foregroundColor: textColor,
+                            ),
+                            child: Text(
+                              'Logout',
+                              style: GoogleFonts.roboto(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
                 );
               },
             ),
@@ -237,7 +237,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   child: TextButton(
                     style: TextButton.styleFrom(
-                      backgroundColor: _currentIndex == 0 ? primaryColor : Colors.transparent,
+                      backgroundColor:
+                          _currentIndex == 0
+                              ? primaryColor
+                              : Colors.transparent,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -248,7 +251,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       'Feed',
                       style: GoogleFonts.roboto(
                         fontWeight: FontWeight.w500,
-                        color: _currentIndex == 0 ? textColor : textColor.withOpacity(0.7),
+                        color:
+                            _currentIndex == 0
+                                ? textColor
+                                : textColor.withOpacity(0.7),
                       ),
                     ),
                   ),
@@ -256,7 +262,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   child: TextButton(
                     style: TextButton.styleFrom(
-                      backgroundColor: _currentIndex == 1 ? primaryColor : Colors.transparent,
+                      backgroundColor:
+                          _currentIndex == 1
+                              ? primaryColor
+                              : Colors.transparent,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -267,7 +276,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       'Your Hacks',
                       style: GoogleFonts.roboto(
                         fontWeight: FontWeight.w500,
-                        color: _currentIndex == 1 ? textColor : textColor.withOpacity(0.7),
+                        color:
+                            _currentIndex == 1
+                                ? textColor
+                                : textColor.withOpacity(0.7),
                       ),
                     ),
                   ),

@@ -1,6 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
+// lib/auth/login.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hacktrack/auth/auth_servies.dart';
 import 'package:hacktrack/auth/signup.dart';
 import 'package:hacktrack/screens/HomeScreen.dart';
 
@@ -15,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
   bool _isLoading = false;
 
   // Colors matching HomeScreen theme
@@ -34,26 +36,23 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
+      await _authService.signInWithEmailAndPassword(
+        _emailController.text.trim(),
+        _passwordController.text,
       );
       
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const HomeScreen())
-      );
+      Navigator.of(context).pushAndRemoveUntil(
+  MaterialPageRoute(builder: (context) => const HomeScreen()),
+  (route) => false, // This removes all previous routes
+);
+
     } catch (e) {
-      // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Login failed: ${e.toString()}'),
@@ -62,11 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
 
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    if (mounted) setState(() => _isLoading = false);
   }
 
   void _navigateToSignup() {
@@ -235,7 +230,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextButton(
                           onPressed: () {
                             // TODO: Implement forgot password functionality
-                            // Navigator.push(context, MaterialPageRoute(builder: (context) => ResetPasswordScreen()));
                           },
                           child: Text(
                             'Forgot Password?',

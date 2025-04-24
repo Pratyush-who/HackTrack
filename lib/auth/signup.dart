@@ -1,7 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+// lib/auth/signup.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hacktrack/auth/auth_servies.dart';
 import 'package:hacktrack/auth/login.dart';
 import 'package:hacktrack/screens/HomeScreen.dart';
 
@@ -19,6 +20,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
+  final AuthService _authService = AuthService();
   bool _isLoading = false;
 
   // Colors matching HomeScreen theme
@@ -40,47 +42,42 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _signup() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
+  if (!_formKey.currentState!.validate()) return;
+
+  setState(() => _isLoading = true);
+
+  try {
+    // Register user with email and password
+    await _authService.registerWithEmailAndPassword(
+      _nameController.text.trim(),
+      _emailController.text.trim(),
+      _passwordController.text,
+    );
+
+    // After registration, update and reload user profile
+    User? currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      await currentUser.updateProfile(displayName: _nameController.text.trim());
+      await currentUser.reload();  // Reload user to get updated data
+      currentUser = FirebaseAuth.instance.currentUser; // Get refreshed user data
     }
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
-
-      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
-        'name': _nameController.text.trim(),
-        'email': _emailController.text.trim(),
-        'createdAt': Timestamp.now(),
-      });
-
-      // For now, just navigate to home screen
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
-    } catch (e) {
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Signup failed: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
+      (route) => false,
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Signup failed: ${e.toString()}'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+
+  if (mounted) setState(() => _isLoading = false);
+}
 
   void _navigateToLogin() {
     Navigator.of(context).pushReplacement(
