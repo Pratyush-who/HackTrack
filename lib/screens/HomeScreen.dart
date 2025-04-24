@@ -1,5 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hacktrack/auth/login.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,8 +12,50 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-  final String userName = "Alex";
-  final String userImageUrl = "https://i.pravatar.cc/150?img=11";
+  String userName = "User";
+  String userImageUrl = "https://i.pravatar.cc/150?img=11";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    User? currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      setState(() {
+        // Use display name if available, otherwise use email or 'User'
+        userName = currentUser.displayName ?? 
+                  (currentUser.email?.split('@')[0] ?? 'User');
+        
+        if (currentUser.photoURL != null) {
+          userImageUrl = currentUser.photoURL!;
+        }
+      });
+      
+    }
+  }
+
+  Future<void> _logout() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      if (!mounted) return;
+      
+      // Navigate to login screen and remove all previous routes
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error signing out: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,9 +143,47 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: GoogleFonts.roboto(color: textColor),
               ),
               onTap: () {
-                Navigator.pop(context);
-                // Add logout functionality here
-                // Example: AuthService().signOut();
+                Navigator.pop(context); // Close drawer
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    backgroundColor: cardColor,
+                    title: Text(
+                      'Logout',
+                      style: GoogleFonts.poppins(
+                        color: textColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    content: Text(
+                      'Are you sure you want to logout?',
+                      style: GoogleFonts.roboto(color: textColor),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'Cancel',
+                          style: GoogleFonts.roboto(color: accentColor),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context); // Close dialog
+                          _logout();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: textColor,
+                        ),
+                        child: Text(
+                          'Logout',
+                          style: GoogleFonts.roboto(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
               },
             ),
           ],

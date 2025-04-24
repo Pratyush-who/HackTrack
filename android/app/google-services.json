@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "191678683715",
+    "project_id": "hacktrack-42793",
+    "storage_bucket": "hacktrack-42793.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:191678683715:android:812cbe8ade4fda0e3952f6",
+        "android_client_info": {
+          "package_name": "com.example.hacktrack"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACFE8BOT9HciyJ9ot4tIy-CBbQY3aA6XU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
