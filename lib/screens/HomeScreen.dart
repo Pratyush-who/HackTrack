@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hacktrack/auth/login.dart';
+import 'package:hacktrack/screens/privatepost.dart';
+import 'package:hacktrack/screens/publicpost.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,7 +16,6 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   String userName = "User";
   String userImageUrl = "https://i.pravatar.cc/150?img=11";
-  
 
   @override
   void initState() {
@@ -41,8 +42,6 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await FirebaseAuth.instance.signOut();
       if (!mounted) return;
-
-      // Navigate to login screen and remove all previous routes
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const LoginScreen()),
         (route) => false,
@@ -214,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Check out the latest hackathons or manage your submissions',
+                    'Save your hackathon memories in one place.',
                     style: GoogleFonts.nunitoSans(
                       fontSize: 16,
                       color: textColor.withOpacity(0.9),
@@ -224,7 +223,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          // Navigation Bar
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
@@ -248,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     onPressed: () => setState(() => _currentIndex = 0),
                     child: Text(
-                      'Feed',
+                      'Public Feed',
                       style: GoogleFonts.roboto(
                         fontWeight: FontWeight.w500,
                         color:
@@ -273,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     onPressed: () => setState(() => _currentIndex = 1),
                     child: Text(
-                      'Your Hacks',
+                      'Your Personal Hacks',
                       style: GoogleFonts.roboto(
                         fontWeight: FontWeight.w500,
                         color:
@@ -292,26 +290,9 @@ class _HomeScreenState extends State<HomeScreen> {
             child: IndexedStack(
               index: _currentIndex,
               children: [
-                // Feed Page
-                Center(
-                  child: Text(
-                    'Feed Content - List of Hackathons',
-                    style: GoogleFonts.nunitoSans(
-                      fontSize: 16,
-                      color: textColor,
-                    ),
-                  ),
-                ),
+                Publicpost(),
                 // Your Hacks Page
-                Center(
-                  child: Text(
-                    'Your Hacks - Your Submissions',
-                    style: GoogleFonts.nunitoSans(
-                      fontSize: 16,
-                      color: textColor,
-                    ),
-                  ),
-                ),
+                PrivatePostPage(),
               ],
             ),
           ),

@@ -1,4 +1,3 @@
-// lib/auth/login.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hacktrack/auth/auth_servies.dart';
@@ -19,14 +18,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService();
   bool _isLoading = false;
 
-  // Colors matching HomeScreen theme
-  static const primaryColor = Color(0xFF2E7D32); // Green 800
-  static const primaryDarkColor = Color(0xFF1B5E20); // Green 900
-  static const accentColor = Color(0xFF388E3C); // Green 700
-  static const backgroundColor = Color(0xFF121212); // Dark background
-  static const surfaceColor = Color(0xFF1E1E1E); // Dark surface
-  static const cardColor = Color(0xFF242424); // Dark card
-  static const textColor = Color(0xFFE0E0E0); // Light text for dark background
+  static const primaryColor = Color(0xFF2E7D32); 
+  static const primaryDarkColor = Color(0xFF1B5E20); 
+  static const accentColor = Color(0xFF388E3C); 
+  static const backgroundColor = Color(0xFF121212); 
+  static const surfaceColor = Color(0xFF1E1E1E); 
+  static const cardColor = Color(0xFF242424); 
+  static const textColor = Color(0xFFE0E0E0); 
 
   @override
   void dispose() {
@@ -37,7 +35,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isLoading = true);
 
     try {

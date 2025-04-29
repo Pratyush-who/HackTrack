@@ -19,7 +19,6 @@ class AuthWrapper extends StatelessWidget {
 
         final user = snapshot.data;
         if (user == null) {
-          // Use Navigator to properly handle the login screen
           WidgetsBinding.instance.addPostFrameCallback((_) {
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -28,7 +27,6 @@ class AuthWrapper extends StatelessWidget {
           });
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         } else {
-          // User is logged in, show HomeScreen
           return const HomeScreen();
         }
       },
