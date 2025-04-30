@@ -14,6 +14,23 @@ import 'package:path/path.dart' as path;
 import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
 
+class UploadProgress {
+  final int totalFiles;
+  int completedFiles;
+  int currentFileProgress;
+  
+  UploadProgress(this.totalFiles, {this.completedFiles = 0, this.currentFileProgress = 0});
+  
+  double get overallProgress {
+    if (totalFiles == 0) return 0;
+    return (completedFiles + currentFileProgress / 100) / totalFiles;
+  }
+  
+  int get percentage {
+    return (overallProgress * 100).round();
+  }
+}
+
 class CreatePublicPostPage extends StatefulWidget {
   const CreatePublicPostPage({Key? key}) : super(key: key);
 
@@ -28,12 +45,12 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
   final ImagePicker _imagePicker = ImagePicker();
 
   bool _isLoading = false;
+  int _uploadProgress = 0;
   List<XFile> _selectedImages = [];
   List<XFile> _selectedCertificates = [];
   List<String> _teammates = [''];
 
-  final TextEditingController _hackathonNameController =
-      TextEditingController();
+  final TextEditingController _hackathonNameController = TextEditingController();
   final TextEditingController _projectNameController = TextEditingController();
   final TextEditingController _projectIdeaController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
@@ -136,8 +153,13 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
     }
   }
 
-  Future<List<String>> _uploadToCloudinary(List<XFile> files, String folder) async {
+  Future<List<String>> _uploadToCloudinary(
+  List<XFile> files, 
+  String folder,
+  void Function(UploadProgress) onProgress,
+) async {
   List<String> uploadedUrls = [];
+  final progress = UploadProgress(files.length);
   
   try {
     for (var file in files) {
@@ -146,12 +168,13 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://api.cloudinary.com/v1_1/dteigt5oc/image/upload'), // Hardcode your cloud name here
+        Uri.parse('https://api.cloudinary.com/v1_1/dteigt5oc/image/upload'),
       );
 
       request.fields['upload_preset'] = 'hacktrack_uploads';
       request.fields['folder'] = folder;
 
+      // Create a multipart file without progress tracking
       request.files.add(http.MultipartFile.fromBytes(
         'file',
         fileBytes,
@@ -159,12 +182,19 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
         contentType: mimeType != null ? MediaType.parse(mimeType) : null,
       ));
 
+      // Track overall progress (per file rather than bytes)
+      progress.currentFileProgress = 50; // Mark as 50% when starting upload
+      onProgress(progress);
+
       final response = await request.send();
       final responseData = await response.stream.bytesToString();
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(responseData);
         uploadedUrls.add(jsonResponse['secure_url']);
+        progress.completedFiles++;
+        progress.currentFileProgress = 0;
+        onProgress(progress);
       } else {
         throw Exception('Failed to upload: ${response.statusCode} - $responseData');
       }
@@ -183,50 +213,60 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
     if (_formKey.currentState!.validate() && currentUser != null) {
       setState(() {
         _isLoading = true;
+        _uploadProgress = 0;
       });
 
       try {
         final List<String> photoUrls = await _uploadToCloudinary(
           _selectedImages,
           'hackathon_photos',
+          (progress) {
+            if (mounted) {
+              setState(() {
+                _uploadProgress = progress.percentage;
+              });
+            }
+          },
         );
+        
         final List<String> certificateUrls = await _uploadToCloudinary(
           _selectedCertificates,
           'hackathon_certificates',
+          (progress) {
+            if (mounted) {
+              setState(() {
+                _uploadProgress = progress.percentage;
+              });
+            }
+          },
         );
 
         final HackathonPost post = HackathonPost(
           id: const Uuid().v4(),
           userId: currentUser!.uid,
           hackathonName: _hackathonNameController.text.trim(),
-          teammates:
-              _teammates.where((name) => name.trim().isNotEmpty).toList(),
+          teammates: _teammates.where((name) => name.trim().isNotEmpty).toList(),
           projectName: _projectNameController.text.trim(),
-          projectIdea:
-              _projectIdeaController.text.trim().isNotEmpty
-                  ? _projectIdeaController.text.trim()
-                  : null,
+          projectIdea: _projectIdeaController.text.trim().isNotEmpty
+              ? _projectIdeaController.text.trim()
+              : null,
           location: _locationController.text.trim(),
           mode: _mode,
           date: _date,
-          achievement:
-              _achievementController.text.trim().isNotEmpty
-                  ? _achievementController.text.trim()
-                  : null,
+          achievement: _achievementController.text.trim().isNotEmpty
+              ? _achievementController.text.trim()
+              : null,
           description: _descriptionController.text.trim(),
           certificates: certificateUrls,
-          githubLink:
-              _githubLinkController.text.trim().isNotEmpty
-                  ? _githubLinkController.text.trim()
-                  : null,
-          linkedinLink:
-              _linkedinLinkController.text.trim().isNotEmpty
-                  ? _linkedinLinkController.text.trim()
-                  : null,
-          liveLink:
-              _liveLinkController.text.trim().isNotEmpty
-                  ? _liveLinkController.text.trim()
-                  : null,
+          githubLink: _githubLinkController.text.trim().isNotEmpty
+              ? _githubLinkController.text.trim()
+              : null,
+          linkedinLink: _linkedinLinkController.text.trim().isNotEmpty
+              ? _linkedinLinkController.text.trim()
+              : null,
+          liveLink: _liveLinkController.text.trim().isNotEmpty
+              ? _liveLinkController.text.trim()
+              : null,
           photoUrls: photoUrls,
           createdAt: DateTime.now(),
         );
@@ -298,16 +338,40 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
         ),
         iconTheme: const IconThemeData(color: textColor),
       ),
-      body:
-          _isLoading
-              ? const Center(
-                child: CircularProgressIndicator(color: primaryColor),
-              )
-              : Form(
-                key: _formKey,
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
+      body: _isLoading
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(
+                    value: _uploadProgress / 100,
+                    color: primaryColor,
+                    strokeWidth: 6,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Uploading: $_uploadProgress%',
+                    style: GoogleFonts.roboto(
+                      color: textColor,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Please wait...',
+                    style: GoogleFonts.roboto(
+                      color: textColor.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
                     Text(
                       'Hackathon Name *',
                       style: GoogleFonts.poppins(
@@ -777,28 +841,28 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    ElevatedButton(
-                      onPressed: _submitForm,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: Text(
-                        'Post Hackathon',
-                        style: GoogleFonts.montserrat(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+ElevatedButton(
+                    onPressed: _submitForm,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
+                    child: Text(
+                      'Post Hackathon',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ),
+            ),
     );
   }
 }

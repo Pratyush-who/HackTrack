@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hacktrack/auth/login.dart';
-import 'package:hacktrack/screens/privatepost.dart';
+import 'package:hacktrack/screens/private%20post/privatepost.dart';
 import 'package:hacktrack/screens/public%20post/publicpost.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -91,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   CircleAvatar(
                     radius: 30,
-                    backgroundImage: NetworkImage(userImageUrl),
+                    backgroundImage: NetworkImage('https://avatars.githubusercontent.com/u/177855155?v=4'),
                   ),
                   const SizedBox(height: 10),
                   Text(
