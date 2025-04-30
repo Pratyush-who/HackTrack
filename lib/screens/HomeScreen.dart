@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hacktrack/auth/login.dart';
 import 'package:hacktrack/screens/privatepost.dart';
-import 'package:hacktrack/screens/publicpost.dart';
+import 'package:hacktrack/screens/public%20post/publicpost.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -290,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: IndexedStack(
               index: _currentIndex,
               children: [
-                Publicpost(),
+                Publicpost(userName: userName), // Public Feed
                 // Your Hacks Page
                 PrivatePostPage(),
               ],

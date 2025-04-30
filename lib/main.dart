@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:hacktrack/auth/auth_wrapper.dart';
 import 'firebase_options.dart';
+import 'package:cloudinary_flutter/image/cld_image.dart';
+import 'package:cloudinary_flutter/cloudinary_object.dart';
 
+late CloudinaryObject cloudinary;
 void main() async {
+  cloudinary = CloudinaryObject.fromCloudName(cloudName: 'dteigt5oc');
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
