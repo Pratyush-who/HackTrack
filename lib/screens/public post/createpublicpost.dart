@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hacktrack/main.dart';
+import 'package:hacktrack/models/post.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -18,21 +19,27 @@ class UploadProgress {
   final int totalFiles;
   int completedFiles;
   int currentFileProgress;
-  
-  UploadProgress(this.totalFiles, {this.completedFiles = 0, this.currentFileProgress = 0});
-  
+
+  UploadProgress(
+    this.totalFiles, {
+    this.completedFiles = 0,
+    this.currentFileProgress = 0,
+  });
+
   double get overallProgress {
     if (totalFiles == 0) return 0;
     return (completedFiles + currentFileProgress / 100) / totalFiles;
   }
-  
+
   int get percentage {
     return (overallProgress * 100).round();
   }
 }
 
 class CreatePublicPostPage extends StatefulWidget {
-  const CreatePublicPostPage({Key? key}) : super(key: key);
+  final String userName;
+  const CreatePublicPostPage({Key? key, required this.userName})
+    : super(key: key);
 
   @override
   State<CreatePublicPostPage> createState() => _CreatePublicPostPageState();
@@ -50,7 +57,8 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
   List<XFile> _selectedCertificates = [];
   List<String> _teammates = [''];
 
-  final TextEditingController _hackathonNameController = TextEditingController();
+  final TextEditingController _hackathonNameController =
+      TextEditingController();
   final TextEditingController _projectNameController = TextEditingController();
   final TextEditingController _projectIdeaController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
@@ -154,60 +162,64 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
   }
 
   Future<List<String>> _uploadToCloudinary(
-  List<XFile> files, 
-  String folder,
-  void Function(UploadProgress) onProgress,
-) async {
-  List<String> uploadedUrls = [];
-  final progress = UploadProgress(files.length);
-  
-  try {
-    for (var file in files) {
-      final mimeType = lookupMimeType(file.path);
-      final fileBytes = await file.readAsBytes();
+    List<XFile> files,
+    String folder,
+    void Function(UploadProgress) onProgress,
+  ) async {
+    List<String> uploadedUrls = [];
+    final progress = UploadProgress(files.length);
 
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('https://api.cloudinary.com/v1_1/dteigt5oc/image/upload'),
-      );
+    try {
+      for (var file in files) {
+        final mimeType = lookupMimeType(file.path);
+        final fileBytes = await file.readAsBytes();
 
-      request.fields['upload_preset'] = 'hacktrack_uploads';
-      request.fields['folder'] = folder;
+        var request = http.MultipartRequest(
+          'POST',
+          Uri.parse('https://api.cloudinary.com/v1_1/dteigt5oc/image/upload'),
+        );
 
-      // Create a multipart file without progress tracking
-      request.files.add(http.MultipartFile.fromBytes(
-        'file',
-        fileBytes,
-        filename: path.basename(file.path),
-        contentType: mimeType != null ? MediaType.parse(mimeType) : null,
-      ));
+        request.fields['upload_preset'] = 'hacktrack_uploads';
+        request.fields['folder'] = folder;
 
-      // Track overall progress (per file rather than bytes)
-      progress.currentFileProgress = 50; // Mark as 50% when starting upload
-      onProgress(progress);
+        // Create a multipart file without progress tracking
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'file',
+            fileBytes,
+            filename: path.basename(file.path),
+            contentType: mimeType != null ? MediaType.parse(mimeType) : null,
+          ),
+        );
 
-      final response = await request.send();
-      final responseData = await response.stream.bytesToString();
-
-      if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(responseData);
-        uploadedUrls.add(jsonResponse['secure_url']);
-        progress.completedFiles++;
-        progress.currentFileProgress = 0;
+        // Track overall progress (per file rather than bytes)
+        progress.currentFileProgress = 50; // Mark as 50% when starting upload
         onProgress(progress);
-      } else {
-        throw Exception('Failed to upload: ${response.statusCode} - $responseData');
+
+        final response = await request.send();
+        final responseData = await response.stream.bytesToString();
+
+        if (response.statusCode == 200) {
+          final jsonResponse = jsonDecode(responseData);
+          uploadedUrls.add(jsonResponse['secure_url']);
+          progress.completedFiles++;
+          progress.currentFileProgress = 0;
+          onProgress(progress);
+        } else {
+          throw Exception(
+            'Failed to upload: ${response.statusCode} - $responseData',
+          );
+        }
       }
+      return uploadedUrls;
+    } catch (e) {
+      print('Cloudinary Upload Error: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+      return [];
     }
-    return uploadedUrls;
-  } catch (e) {
-    print('Cloudinary Upload Error: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Upload failed: $e')),
-    );
-    return [];
   }
-}
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate() && currentUser != null) {
@@ -228,7 +240,7 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
             }
           },
         );
-        
+
         final List<String> certificateUrls = await _uploadToCloudinary(
           _selectedCertificates,
           'hackathon_certificates',
@@ -244,29 +256,36 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
         final HackathonPost post = HackathonPost(
           id: const Uuid().v4(),
           userId: currentUser!.uid,
+          userName: widget.userName,  
           hackathonName: _hackathonNameController.text.trim(),
-          teammates: _teammates.where((name) => name.trim().isNotEmpty).toList(),
+          teammates:
+              _teammates.where((name) => name.trim().isNotEmpty).toList(),
           projectName: _projectNameController.text.trim(),
-          projectIdea: _projectIdeaController.text.trim().isNotEmpty
-              ? _projectIdeaController.text.trim()
-              : null,
+          projectIdea:
+              _projectIdeaController.text.trim().isNotEmpty
+                  ? _projectIdeaController.text.trim()
+                  : null,
           location: _locationController.text.trim(),
           mode: _mode,
           date: _date,
-          achievement: _achievementController.text.trim().isNotEmpty
-              ? _achievementController.text.trim()
-              : null,
+          achievement:
+              _achievementController.text.trim().isNotEmpty
+                  ? _achievementController.text.trim()
+                  : null,
           description: _descriptionController.text.trim(),
           certificates: certificateUrls,
-          githubLink: _githubLinkController.text.trim().isNotEmpty
-              ? _githubLinkController.text.trim()
-              : null,
-          linkedinLink: _linkedinLinkController.text.trim().isNotEmpty
-              ? _linkedinLinkController.text.trim()
-              : null,
-          liveLink: _liveLinkController.text.trim().isNotEmpty
-              ? _liveLinkController.text.trim()
-              : null,
+          githubLink:
+              _githubLinkController.text.trim().isNotEmpty
+                  ? _githubLinkController.text.trim()
+                  : null,
+          linkedinLink:
+              _linkedinLinkController.text.trim().isNotEmpty
+                  ? _linkedinLinkController.text.trim()
+                  : null,
+          liveLink:
+              _liveLinkController.text.trim().isNotEmpty
+                  ? _liveLinkController.text.trim()
+                  : null,
           photoUrls: photoUrls,
           createdAt: DateTime.now(),
         );
@@ -338,40 +357,38 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
         ),
         iconTheme: const IconThemeData(color: textColor),
       ),
-      body: _isLoading
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(
-                    value: _uploadProgress / 100,
-                    color: primaryColor,
-                    strokeWidth: 6,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Uploading: $_uploadProgress%',
-                    style: GoogleFonts.roboto(
-                      color: textColor,
-                      fontSize: 16,
+      body:
+          _isLoading
+              ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(
+                      value: _uploadProgress / 100,
+                      color: primaryColor,
+                      strokeWidth: 6,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Please wait...',
-                    style: GoogleFonts.roboto(
-                      color: textColor.withOpacity(0.7),
-                      fontSize: 14,
+                    const SizedBox(height: 16),
+                    Text(
+                      'Uploading: $_uploadProgress%',
+                      style: GoogleFonts.roboto(color: textColor, fontSize: 16),
                     ),
-                  ),
-                ],
-              ),
-            )
-          : Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
+                    const SizedBox(height: 8),
+                    Text(
+                      'Please wait...',
+                      style: GoogleFonts.roboto(
+                        color: textColor.withOpacity(0.7),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              : Form(
+                key: _formKey,
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
                     Text(
                       'Hackathon Name *',
                       style: GoogleFonts.poppins(
@@ -841,90 +858,29 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
                     ),
                     const SizedBox(height: 24),
 
-ElevatedButton(
-                    onPressed: _submitForm,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                    ElevatedButton(
+                      onPressed: _submitForm,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'Post Hackathon',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                    child: Text(
-                      'Post Hackathon',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
-            ),
     );
   }
 }
 
-class HackathonPost {
-  final String id;
-  final String userId;
-  final String hackathonName;
-  final List<String> teammates;
-  final String projectName;
-  final String? projectIdea;
-  final String location;
-  final String mode;
-  final DateTime date;
-  final String? achievement;
-  final String description;
-  final List<String> certificates;
-  final String? githubLink;
-  final String? linkedinLink;
-  final String? liveLink;
-  final List<String> photoUrls;
-  final DateTime createdAt;
-
-  HackathonPost({
-    required this.id,
-    required this.userId,
-    required this.hackathonName,
-    required this.teammates,
-    required this.projectName,
-    this.projectIdea,
-    required this.location,
-    required this.mode,
-    required this.date,
-    this.achievement,
-    required this.description,
-    required this.certificates,
-    this.githubLink,
-    this.linkedinLink,
-    this.liveLink,
-    required this.photoUrls,
-    required this.createdAt,
-  });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'userId': userId,
-      'hackathonName': hackathonName,
-      'teammates': teammates,
-      'projectName': projectName,
-      'projectIdea': projectIdea,
-      'location': location,
-      'mode': mode,
-      'date': Timestamp.fromDate(date),
-      'achievement': achievement,
-      'description': description,
-      'certificates': certificates,
-      'githubLink': githubLink,
-      'linkedinLink': linkedinLink,
-      'liveLink': liveLink,
-      'photoUrls': photoUrls,
-      'createdAt': Timestamp.fromDate(createdAt),
-    };
-  }
-}

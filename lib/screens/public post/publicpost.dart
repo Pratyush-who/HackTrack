@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hacktrack/models/post.dart';
 import 'package:hacktrack/screens/HomeScreen.dart';
 import 'package:intl/intl.dart';
 
@@ -122,7 +123,8 @@ class _PublicpostState extends State<Publicpost> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const CreatePublicPostPage(),
+              builder:
+                  (context) => CreatePublicPostPage(userName: widget.userName),
             ),
           ).then((_) => _fetchHackathonPosts());
         },
@@ -132,248 +134,168 @@ class _PublicpostState extends State<Publicpost> {
   }
 
   Widget _buildHackathonCard(BuildContext context, HackathonPost post) {
-  const cardColor = Color(0xFF242424);
-  const textColor = Color(0xFFE0E0E0);
-  const primaryColor = Color(0xFF2E7D32);
+    const cardColor = Color(0xFF242424);
+    const textColor = Color(0xFFE0E0E0);
+    const primaryColor = Color(0xFF2E7D32);
 
-  return Card(
-    margin: const EdgeInsets.only(bottom: 16),
-    color: cardColor,
-    elevation: 4,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    child: InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HackathonDetailPage(post: post),
-          ),
-        );
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with hackathon name
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: primaryColor,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      color: cardColor,
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HackathonDetailPage(post: post),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  post.hackathonName,
-                  style: GoogleFonts.montserrat(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+          );
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with hackathon name
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: primaryColor,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.person, size: 16, color: Colors.white70),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Posted by: ${widget.userName}',
-                      style: GoogleFonts.roboto(
-                        fontSize: 14,
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          // Project name
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Text(
-              'Project: ${post.projectName}',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: textColor,
               ),
-            ),
-          ),
-          // Team members
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Row(
-              children: [
-                const Icon(Icons.people, size: 18, color: primaryColor),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Team: ${post.teammates.join(", ")}',
-                    style: GoogleFonts.roboto(
-                      fontSize: 14,
-                      color: textColor.withOpacity(0.9),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    post.hackathonName,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          // Location and date
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Row(
+                  const SizedBox(height: 4),
+                  Row(
                     children: [
-                      const Icon(Icons.location_on, size: 18, color: primaryColor),
+                      const Icon(Icons.person, size: 16, color: Colors.white70),
                       const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          post.location,
-                          style: GoogleFonts.roboto(
-                            fontSize: 14,
-                            color: textColor.withOpacity(0.8),
-                          ),
+                      Text(
+                        'Posted by: ${post.userName}',
+                        style: GoogleFonts.roboto(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.9),
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 16),
-                Row(
-                  children: [
-                    const Icon(Icons.calendar_today, size: 18, color: primaryColor),
-                    const SizedBox(width: 4),
-                    Text(
-                      DateFormat('MMM dd, yyyy').format(post.date),
-                      style: GoogleFonts.roboto(
-                        fontSize: 14,
-                        color: textColor.withOpacity(0.8),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          // Show image if available
-          if (post.photoUrls.isNotEmpty)
-            Container(
-              height: 150,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
-                ),
-                image: DecorationImage(
-                  image: NetworkImage(post.photoUrls[0]),
-                  fit: BoxFit.cover,
+            // Project name
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Text(
+                'Project: ${post.projectName}',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: textColor,
                 ),
               ),
             ),
-        ],
+            // Team members
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.people, size: 18, color: primaryColor),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Team: ${post.teammates.join(", ")}',
+                      style: GoogleFonts.roboto(
+                        fontSize: 14,
+                        color: textColor.withOpacity(0.9),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Location and date
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          size: 18,
+                          color: primaryColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            post.location,
+                            style: GoogleFonts.roboto(
+                              fontSize: 14,
+                              color: textColor.withOpacity(0.8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.calendar_today,
+                        size: 18,
+                        color: primaryColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        DateFormat('MMM dd, yyyy').format(post.date),
+                        style: GoogleFonts.roboto(
+                          fontSize: 14,
+                          color: textColor.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Show image if available
+            if (post.photoUrls.isNotEmpty)
+              Container(
+                height: 150,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                  image: DecorationImage(
+                    image: NetworkImage(post.photoUrls[0]),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
-    ),
-  );
-}
-}
-
-// Add HackathonPost model and HackathonDetailPage to make the code compatible
-// with CreatePublicPostPage
-
-class HackathonPost {
-  final String id;
-  final String userId;
-  final String hackathonName;
-  final List<String> teammates;
-  final String projectName;
-  final String? projectIdea;
-  final String location;
-  final String mode;
-  final DateTime date;
-  final String? achievement;
-  final String description;
-  final List<String> certificates;
-  final String? githubLink;
-  final String? linkedinLink;
-  final String? liveLink;
-  final List<String> photoUrls;
-  final DateTime createdAt;
-
-  HackathonPost({
-    required this.id,
-    required this.userId,
-    required this.hackathonName,
-    required this.teammates,
-    required this.projectName,
-    this.projectIdea,
-    required this.location,
-    required this.mode,
-    required this.date,
-    this.achievement,
-    required this.description,
-    required this.certificates,
-    this.githubLink,
-    this.linkedinLink,
-    this.liveLink,
-    required this.photoUrls,
-    required this.createdAt,
-  });
-
-  factory HackathonPost.fromDocument(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-
-    return HackathonPost(
-      id: data['id'] ?? '',
-      userId: data['userId'] ?? '',
-      hackathonName: data['hackathonName'] ?? '',
-      teammates: List<String>.from(data['teammates'] ?? []),
-      projectName: data['projectName'] ?? '',
-      projectIdea: data['projectIdea'],
-      location: data['location'] ?? '',
-      mode: data['mode'] ?? 'Offline',
-      date: (data['date'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      achievement: data['achievement'],
-      description: data['description'] ?? '',
-      certificates: List<String>.from(data['certificates'] ?? []),
-      githubLink: data['githubLink'],
-      linkedinLink: data['linkedinLink'],
-      liveLink: data['liveLink'],
-      photoUrls: List<String>.from(data['photoUrls'] ?? []),
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'userId': userId,
-      'hackathonName': hackathonName,
-      'teammates': teammates,
-      'projectName': projectName,
-      'projectIdea': projectIdea,
-      'location': location,
-      'mode': mode,
-      'date': Timestamp.fromDate(date),
-      'achievement': achievement,
-      'description': description,
-      'certificates': certificates,
-      'githubLink': githubLink,
-      'linkedinLink': linkedinLink,
-      'liveLink': liveLink,
-      'photoUrls': photoUrls,
-      'createdAt': Timestamp.fromDate(createdAt),
-    };
-  }
 }
+
 
 class HackathonDetailPage extends StatelessWidget {
   final HackathonPost post;
