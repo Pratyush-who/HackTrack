@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:hacktrack/auth/auth_wrapper.dart';
+import 'package:hacktrack/screens/splashscree.dart';
 import 'firebase_options.dart';
-import 'package:cloudinary_flutter/image/cld_image.dart';
 import 'package:cloudinary_flutter/cloudinary_object.dart';
 
 late CloudinaryObject cloudinary;
@@ -12,7 +11,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
+  runApp( MyApp());
 }
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -32,7 +31,7 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF121212),
         fontFamily: 'Roboto',
       ),
-      home: const AuthWrapper(), // Only use home, remove initialRoute
+      home: SplashScreen(),
     );
   }
 }
