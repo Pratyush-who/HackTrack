@@ -1,11 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:cloudinary_flutter/cloudinary_object.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hacktrack/main.dart';
 import 'package:hacktrack/models/post.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -14,27 +12,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
-
-class UploadProgress {
-  final int totalFiles;
-  int completedFiles;
-  int currentFileProgress;
-
-  UploadProgress(
-    this.totalFiles, {
-    this.completedFiles = 0,
-    this.currentFileProgress = 0,
-  });
-
-  double get overallProgress {
-    if (totalFiles == 0) return 0;
-    return (completedFiles + currentFileProgress / 100) / totalFiles;
-  }
-
-  int get percentage {
-    return (overallProgress * 100).round();
-  }
-}
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 class CreatePublicPostPage extends StatefulWidget {
   final String userName;
@@ -46,13 +24,17 @@ class CreatePublicPostPage extends StatefulWidget {
 }
 
 class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
   final _formKey = GlobalKey<FormState>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final User? currentUser = FirebaseAuth.instance.currentUser;
   final ImagePicker _imagePicker = ImagePicker();
 
   bool _isLoading = false;
-  int _uploadProgress = 0;
   List<XFile> _selectedImages = [];
   List<XFile> _selectedCertificates = [];
   List<String> _teammates = [''];
@@ -164,11 +146,8 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
   Future<List<String>> _uploadToCloudinary(
     List<XFile> files,
     String folder,
-    void Function(UploadProgress) onProgress,
   ) async {
     List<String> uploadedUrls = [];
-    final progress = UploadProgress(files.length);
-
     try {
       for (var file in files) {
         final mimeType = lookupMimeType(file.path);
@@ -182,7 +161,6 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
         request.fields['upload_preset'] = 'hacktrack_uploads';
         request.fields['folder'] = folder;
 
-        // Create a multipart file without progress tracking
         request.files.add(
           http.MultipartFile.fromBytes(
             'file',
@@ -192,19 +170,12 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
           ),
         );
 
-        // Track overall progress (per file rather than bytes)
-        progress.currentFileProgress = 50; // Mark as 50% when starting upload
-        onProgress(progress);
-
         final response = await request.send();
         final responseData = await response.stream.bytesToString();
 
         if (response.statusCode == 200) {
           final jsonResponse = jsonDecode(responseData);
           uploadedUrls.add(jsonResponse['secure_url']);
-          progress.completedFiles++;
-          progress.currentFileProgress = 0;
-          onProgress(progress);
         } else {
           throw Exception(
             'Failed to upload: ${response.statusCode} - $responseData',
@@ -225,38 +196,22 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
     if (_formKey.currentState!.validate() && currentUser != null) {
       setState(() {
         _isLoading = true;
-        _uploadProgress = 0;
       });
 
       try {
         final List<String> photoUrls = await _uploadToCloudinary(
           _selectedImages,
           'hackathon_photos',
-          (progress) {
-            if (mounted) {
-              setState(() {
-                _uploadProgress = progress.percentage;
-              });
-            }
-          },
         );
-
         final List<String> certificateUrls = await _uploadToCloudinary(
           _selectedCertificates,
           'hackathon_certificates',
-          (progress) {
-            if (mounted) {
-              setState(() {
-                _uploadProgress = progress.percentage;
-              });
-            }
-          },
         );
 
         final HackathonPost post = HackathonPost(
           id: const Uuid().v4(),
           userId: currentUser!.uid,
-          userName: widget.userName,  
+          userName: widget.userName,
           hackathonName: _hackathonNameController.text.trim(),
           teammates:
               _teammates.where((name) => name.trim().isNotEmpty).toList(),
@@ -291,7 +246,7 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
         );
 
         await _firestore
-            .collection('public_hackathon_posts')
+            .collection('public_hackathon')
             .doc(post.id)
             .set(post.toMap());
 
@@ -363,23 +318,18 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(
-                      value: _uploadProgress / 100,
-                      color: primaryColor,
-                      strokeWidth: 6,
+                    SizedBox(
+                      width: 200, // Adjust as needed
+                      height: 200, // Adjust as needed
+                      child: LoadingAnimationWidget.halfTriangleDot(
+                        color: primaryColor,
+                        size: 200,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Uploading: $_uploadProgress%',
+                      'Uploading files...',
                       style: GoogleFonts.roboto(color: textColor, fontSize: 16),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Please wait...',
-                      style: GoogleFonts.roboto(
-                        color: textColor.withOpacity(0.7),
-                        fontSize: 14,
-                      ),
                     ),
                   ],
                 ),
@@ -883,4 +833,3 @@ class _CreatePublicPostPageState extends State<CreatePublicPostPage> {
     );
   }
 }
-

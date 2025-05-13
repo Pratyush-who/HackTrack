@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hacktrack/models/post.dart';
 import 'package:intl/intl.dart';
-
 import 'createpublicpost.dart';
 
 class Publicpost extends StatefulWidget {
@@ -35,7 +34,7 @@ class _PublicpostState extends State<Publicpost> {
     try {
       final QuerySnapshot snapshot =
           await _firestore
-              .collection('public_hackathon_posts')
+              .collection('public_hackathon')
               .orderBy('createdAt', descending: true)
               .get();
 
@@ -189,6 +188,16 @@ class _PublicpostState extends State<Publicpost> {
                           color: Colors.white.withOpacity(0.9),
                         ),
                       ),
+                      SizedBox(width: 50,),
+                      const Icon(Icons.timer, size: 16, color: Colors.white70),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${DateFormat('dd MMM, yyyy').format(post.createdAt)}',
+                        style: GoogleFonts.roboto(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -261,7 +270,7 @@ class _PublicpostState extends State<Publicpost> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        DateFormat('MMM dd, yyyy').format(post.date),
+                        DateFormat('dd MMM, yyyy').format(post.date),
                         style: GoogleFonts.roboto(
                           fontSize: 14,
                           color: textColor.withOpacity(0.8),
@@ -337,10 +346,10 @@ class HackathonDetailPage extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Basic info card
             Card(
               color: cardColor,
               elevation: 2,
+              shadowColor: primaryColor.withOpacity(0.5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -348,7 +357,6 @@ class HackathonDetailPage extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    // Team
                     Row(
                       children: [
                         const Icon(Icons.people, color: primaryColor),
@@ -658,8 +666,46 @@ class HackathonDetailPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                             child: GestureDetector(
                               onTap: () {
-                                // Full-screen image view
+                                showGeneralDialog(
+                                  context: context,
+                                  barrierDismissible: true,
+                                  barrierLabel: "Dismiss",
+                                  barrierColor: Colors.black.withOpacity(0.8),
+                                  transitionDuration: Duration(
+                                    milliseconds: 300,
+                                  ),
+                                  pageBuilder: (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                  ) {
+                                    return Center(
+                                      child: Hero(
+                                        tag: post.photoUrls[index],
+                                        child: Image.network(
+                                          post.photoUrls[index],
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  transitionBuilder: (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                    child,
+                                  ) {
+                                    return ScaleTransition(
+                                      scale: CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOut,
+                                      ),
+                                      child: child,
+                                    );
+                                  },
+                                );
                               },
+
                               child: Image.network(
                                 post.photoUrls[index],
                                 width: 240,
@@ -702,7 +748,44 @@ class HackathonDetailPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                             child: GestureDetector(
                               onTap: () {
-                                // Full-screen certificate view
+                                showGeneralDialog(
+                                  context: context,
+                                  barrierDismissible: true,
+                                  barrierLabel: "Dismiss",
+                                  barrierColor: Colors.black.withOpacity(0.8),
+                                  transitionDuration: Duration(
+                                    milliseconds: 300,
+                                  ),
+                                  pageBuilder: (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                  ) {
+                                    return Center(
+                                      child: Hero(
+                                        tag: post.certificates[index],
+                                        child: Image.network(
+                                          post.certificates[index],
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  transitionBuilder: (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                    child,
+                                  ) {
+                                    return ScaleTransition(
+                                      scale: CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOut,
+                                      ),
+                                      child: child,
+                                    );
+                                  },
+                                );
                               },
                               child: Image.network(
                                 post.certificates[index],
